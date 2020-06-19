@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,14 +102,14 @@ public class StringHttpMessageConverter extends AbstractHttpMessageConverter<Str
 
 
 	@Override
-	protected void addDefaultHeaders(HttpHeaders headers, String s, @Nullable MediaType mediaType) throws IOException {
+	protected void addDefaultHeaders(HttpHeaders headers, String s, @Nullable MediaType type) throws IOException {
 		if (headers.getContentType() == null ) {
-			if (mediaType != null && mediaType.isCompatibleWith(MediaType.APPLICATION_JSON)) {
+			if (type != null && type.isConcrete() && type.isCompatibleWith(MediaType.APPLICATION_JSON)) {
 				// Prevent charset parameter for JSON..
-				headers.setContentType(mediaType);
+				headers.setContentType(type);
 			}
 		}
-		super.addDefaultHeaders(headers, s, mediaType);
+		super.addDefaultHeaders(headers, s, type);
 	}
 
 	@Override
@@ -139,18 +139,19 @@ public class StringHttpMessageConverter extends AbstractHttpMessageConverter<Str
 	}
 
 	private Charset getContentTypeCharset(@Nullable MediaType contentType) {
-		if (contentType != null && contentType.getCharset() != null) {
-			return contentType.getCharset();
+		if (contentType != null) {
+			Charset charset = contentType.getCharset();
+			if (charset != null) {
+				return charset;
+			}
+			else if (contentType.isCompatibleWith(MediaType.APPLICATION_JSON)) {
+				// Matching to AbstractJackson2HttpMessageConverter#DEFAULT_CHARSET
+				return StandardCharsets.UTF_8;
+			}
 		}
-		else if (contentType != null && contentType.isCompatibleWith(MediaType.APPLICATION_JSON)) {
-			// Matching to AbstractJackson2HttpMessageConverter#DEFAULT_CHARSET
-			return StandardCharsets.UTF_8;
-		}
-		else {
-			Charset charset = getDefaultCharset();
-			Assert.state(charset != null, "No default charset");
-			return charset;
-		}
+		Charset charset = getDefaultCharset();
+		Assert.state(charset != null, "No default charset");
+		return charset;
 	}
 
 }
